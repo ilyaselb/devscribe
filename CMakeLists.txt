@@ -22,18 +22,22 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(external/glfw)
 
-# Add your headers here just so they show up in IDEs (VS/CLion)
 add_executable(DevScribe
     src/main.cpp
-    src/Note.hpp       # Added
-    src/NoteManager.hpp # Added
+    src/App.cpp
+    src/UIManager.cpp
+    src/NoteManager.cpp
+    src/Note.hpp
+    src/NoteManager.hpp
+    src/App.hpp
+    src/UIManager.hpp
     ${IMGUI_SOURCES}
 )
 
 target_include_directories(DevScribe PRIVATE
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
-    src               # Add src to include path
+    src
 )
 
 target_link_libraries(DevScribe
@@ -41,7 +45,6 @@ target_link_libraries(DevScribe
     glfw
 )
 
-# Windows specific linking
 if(WIN32)
     target_link_libraries(DevScribe opengl32)
 endif()
