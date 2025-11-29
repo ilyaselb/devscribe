@@ -1,10 +1,14 @@
 #include "UIManager.hpp"
+#include "imgui_markdown.h"
 #include <cstring>
 #include <algorithm>
 #include <cctype>
 #include <iostream>
 
-UIManager::UIManager(NoteManager& nm) : noteManager(nm), selectedNoteIndex(-1), openDeletePopup(false), openRenamePopup(false), noteIndexToRename(-1), notificationDuration(0.0f)
+UIManager::UIManager(NoteManager& nm) : 
+    noteManager(nm), selectedNoteIndex(-1), openDeletePopup(false), 
+    openRenamePopup(false), noteIndexToRename(-1), notificationDuration(0.0f), 
+    isPreviewMode(false)
 {
     editorBuffer = new char[EDITOR_BUFFER_SIZE];
     std::memset(editorBuffer, 0, EDITOR_BUFFER_SIZE);
@@ -23,7 +27,9 @@ void UIManager::CopyToBuffer(const std::string& source, char* buffer, size_t buf
     buffer[copyLen] = '\0';
 }
 
-bool UIManager::StringContainsCaseInsensitive(const std::string& haystack, const std::string& needle)
+bool UIManager::StringContainsCaseInsensitive(
+    const std::string& haystack, 
+    const std::string& needle)
 {
     if (needle.empty()) return true;
     auto it = std::search(
@@ -38,7 +44,7 @@ void UIManager::Render()
 {
     RenderDockSpace();
     RenderNoteList();
-    RenderEditor();
+    RenderEditorOrPreview();
     RenderPopups();
     RenderNotifications();
 }
@@ -146,7 +152,7 @@ void UIManager::RenderNoteList()
     ImGui::End();
 }
 
-void UIManager::RenderEditor()
+void UIManager::RenderEditorOrPreview()
 {
     ImGui::Begin("Editor");
 
@@ -174,18 +180,34 @@ void UIManager::RenderEditor()
         ImGui::PopStyleColor(1);
 
         ImGui::SameLine();
+        if (ImGui::Checkbox("Preview Mode", &isPreviewMode))
+        {
+            if (isPreviewMode)
+            {
+                currentNote.content = std::string(editorBuffer);
+            }
+        }
+
+        ImGui::SameLine();
         ImGui::TextDisabled("| %s", currentNote.filepath.c_str());
         ImGui::Separator();
 
-        ImGui::InputTextMultiline("##source", editorBuffer, EDITOR_BUFFER_SIZE,
-            ImVec2(-1.0f, -1.0f), ImGuiInputTextFlags_AllowTabInput);
-
-        if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S))
+        if (isPreviewMode)
         {
-            currentNote.content = std::string(editorBuffer);
-            if (currentNote.save())
+            RenderMarkdown();
+        }
+        else
+        {
+            ImGui::InputTextMultiline("##source", editorBuffer, EDITOR_BUFFER_SIZE,
+                ImVec2(-1.0f, -1.0f), ImGuiInputTextFlags_AllowTabInput);
+
+            if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S))
             {
-                ShowNotification("Note Saved");
+                currentNote.content = std::string(editorBuffer);
+                if (currentNote.save())
+                {
+                    ShowNotification("Note Saved");
+                }
             }
         }
     }
@@ -195,6 +217,16 @@ void UIManager::RenderEditor()
     }
 
     ImGui::End();
+}
+
+void UIManager::RenderMarkdown()
+{
+    if (selectedNoteIndex < 0 || selectedNoteIndex >= (int)noteManager.notes.size()) return;
+    
+    const std::string& markdownText = noteManager.notes[selectedNoteIndex].content;
+
+    ImGui::MarkdownConfig mdConfig;
+    ImGui::Markdown(markdownText.c_str(), markdownText.length(), mdConfig);
 }
 
 void UIManager::RenderPopups()
@@ -283,7 +315,11 @@ void UIManager::RenderNotifications()
         ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
         ImGui::SetNextWindowBgAlpha(0.7f);
 
-        ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize
+            | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | 
+            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+            ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | 
+            ImGuiWindowFlags_NoMove;
         
         if (ImGui::Begin("Notification", NULL, flags))
         {

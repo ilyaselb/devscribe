@@ -43,11 +43,8 @@ bool App::Init()
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-    // UI Scaling: Load a larger font
-    // Try to load Segoe UI from Windows fonts, otherwise default
     io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 24.0f);
-    // If that fails, it will fallback to default, but we can also scale
-    io.FontGlobalScale = 1.0f; // Reset if we successfully loaded a font, or set to 1.5f if we want more scaling
+    io.FontGlobalScale = 1.0f;
 
     SetupStyle();
 
@@ -72,9 +69,7 @@ void App::SetupStyle()
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
 
-    // Increase style sizes for better visibility
-    style.ScaleAllSizes(1.0f); // We are using a larger font, so standard sizes might be okay, or we can scale them too.
-    // Let's rely on the font size for text and auto-resizing elements.
+    style.ScaleAllSizes(1.0f);
 }
 
 void App::Run()

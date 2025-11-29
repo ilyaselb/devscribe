@@ -38,6 +38,7 @@ target_include_directories(DevScribe PRIVATE
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
     src
+    external/imgui_markdown
 )
 
 target_link_libraries(DevScribe

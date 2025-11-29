@@ -28,9 +28,13 @@ private:
 
     void RenderDockSpace();
     void RenderNoteList();
-    void RenderEditor();
+    void RenderEditorOrPreview();
     void RenderPopups();
     void RenderNotifications();
+
+    // Markdown
+    bool isPreviewMode;
+    void RenderMarkdown();
 
     // Notification state
     std::string notificationMessage;
