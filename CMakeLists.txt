@@ -34,6 +34,12 @@ add_executable(DevScribe
     ${IMGUI_SOURCES}
 )
 
+add_custom_command(TARGET DevScribe POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/assets
+    $<TARGET_FILE_DIR:DevScribe>/assets
+)
+
 target_include_directories(DevScribe PRIVATE
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends

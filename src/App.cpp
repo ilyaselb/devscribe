@@ -43,7 +43,15 @@ bool App::Init()
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-    io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 24.0f);
+    ImFont* font = io.Fonts->AddFontFromFileTTF("assets/fonts/JetBrainsMono-Regular.ttf", 24.0f);
+
+    if (font == nullptr)
+    {
+        std::cerr << "Warning: Could not load custom font. Falling back to default.\n";
+        ImFontConfig config;
+        config.SizePixels = 24.0f;
+        io.Fonts->AddFontDefault(&config);
+    }
     io.FontGlobalScale = 1.0f;
 
     SetupStyle();

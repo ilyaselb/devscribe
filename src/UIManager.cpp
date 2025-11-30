@@ -10,15 +10,12 @@ UIManager::UIManager(NoteManager& nm) :
     openRenamePopup(false), noteIndexToRename(-1), notificationDuration(0.0f), 
     isPreviewMode(false)
 {
-    editorBuffer = new char[EDITOR_BUFFER_SIZE];
-    std::memset(editorBuffer, 0, EDITOR_BUFFER_SIZE);
+    editorBuffer.resize(EDITOR_BUFFER_SIZE, 0);
+
     std::memset(searchBuffer, 0, sizeof(searchBuffer));
 }
 
-UIManager::~UIManager()
-{
-    delete[] editorBuffer;
-}
+UIManager::~UIManager() = default;
 
 void UIManager::CopyToBuffer(const std::string& source, char* buffer, size_t bufferSize)
 {
@@ -103,8 +100,8 @@ void UIManager::RenderNoteList()
         if (ImGui::Selectable(noteManager.notes[i].title.c_str(), isSelected))
         {
             selectedNoteIndex = i;
-            std::memset(editorBuffer, 0, EDITOR_BUFFER_SIZE);
-            CopyToBuffer(noteManager.notes[i].content, editorBuffer, EDITOR_BUFFER_SIZE);
+            std::memset(editorBuffer.data(), 0, EDITOR_BUFFER_SIZE);
+            CopyToBuffer(noteManager.notes[i].content, editorBuffer.data(), EDITOR_BUFFER_SIZE);
         }
 
         if (ImGui::BeginPopupContextItem())
@@ -141,8 +138,8 @@ void UIManager::RenderNoteList()
             ImGui::CloseCurrentPopup();
             noteManager.refreshNotes();
             selectedNoteIndex = (int)noteManager.notes.size() - 1;
-            std::memset(editorBuffer, 0, EDITOR_BUFFER_SIZE);
-            CopyToBuffer(noteManager.notes.back().content, editorBuffer, EDITOR_BUFFER_SIZE);
+            std::memset(editorBuffer.data(), 0, EDITOR_BUFFER_SIZE);
+            CopyToBuffer(noteManager.notes.back().content, editorBuffer.data(), EDITOR_BUFFER_SIZE);
             std::memset(newTitle, 0, sizeof(newTitle));
             ShowNotification("Note Created");
         }
@@ -164,7 +161,7 @@ void UIManager::RenderEditorOrPreview()
 
         if (ImGui::Button("Save"))
         {
-            currentNote.content = std::string(editorBuffer);
+            currentNote.content = editorBuffer.data();
             if (currentNote.save())
             {
                 ShowNotification("Note Saved");
@@ -184,7 +181,7 @@ void UIManager::RenderEditorOrPreview()
         {
             if (isPreviewMode)
             {
-                currentNote.content = std::string(editorBuffer);
+                currentNote.content = editorBuffer.data();
             }
         }
 
@@ -192,24 +189,65 @@ void UIManager::RenderEditorOrPreview()
         ImGui::TextDisabled("| %s", currentNote.filepath.c_str());
         ImGui::Separator();
 
+        int words = 0;
+        int chars = 0;
+        int lines = 1;
+
+        const char* text = isPreviewMode ? currentNote.content.c_str() : editorBuffer.data();
+        bool inWord = false;
+
+        for (const char* c = text; *c; ++c)
+        {
+            chars++;
+            if (*c == '\n') lines++;
+
+            if (std::isspace((unsigned char)*c)) {
+                inWord = false;
+            }
+            else if (!inWord) {
+                inWord = true;
+                words++;
+            }
+        }
+
+        float footerHeight = ImGui::GetFrameHeight();
+
         if (isPreviewMode)
         {
+            ImGui::BeginChild("PreviewRegion", ImVec2(0, -footerHeight), false, 0);
             RenderMarkdown();
+            ImGui::EndChild();
         }
         else
         {
-            ImGui::InputTextMultiline("##source", editorBuffer, EDITOR_BUFFER_SIZE,
-                ImVec2(-1.0f, -1.0f), ImGuiInputTextFlags_AllowTabInput);
+            ImGui::InputTextMultiline("##source", editorBuffer.data(), EDITOR_BUFFER_SIZE,
+                ImVec2(-1.0f, -footerHeight), ImGuiInputTextFlags_AllowTabInput);
 
             if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S))
             {
-                currentNote.content = std::string(editorBuffer);
+                currentNote.content = editorBuffer.data();
                 if (currentNote.save())
                 {
                     ShowNotification("Note Saved");
                 }
             }
         }
+
+        ImGui::Separator();
+
+        ImGui::TextDisabled("Lines: %d", lines);
+        ImGui::SameLine();
+        ImGui::TextDisabled("|");
+        ImGui::SameLine();
+        ImGui::TextDisabled("Words: %d", words);
+        ImGui::SameLine();
+        ImGui::TextDisabled("|");
+        ImGui::SameLine();
+        ImGui::TextDisabled("Chars: %d", chars);
+
+        float sizeTextWidth = 100.0f;
+        ImGui::SameLine(ImGui::GetWindowWidth() - sizeTextWidth - 20.0f);
+        ImGui::TextDisabled("%.2f KB", chars / 1024.0f);
     }
     else
     {
@@ -246,7 +284,7 @@ void UIManager::RenderPopups()
             {
                 noteManager.deleteNote(selectedNoteIndex);
                 selectedNoteIndex = -1;
-                std::memset(editorBuffer, 0, EDITOR_BUFFER_SIZE);
+                std::memset(editorBuffer.data(), 0, EDITOR_BUFFER_SIZE);
                 ShowNotification("Note Deleted");
             }
             ImGui::CloseCurrentPopup();

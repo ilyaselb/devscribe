@@ -15,7 +15,7 @@ public:
 
 private:
     NoteManager& noteManager;
-    char* editorBuffer;
+    std::vector<char> editorBuffer;
     char searchBuffer[128];
     int selectedNoteIndex;
 
@@ -32,11 +32,9 @@ private:
     void RenderPopups();
     void RenderNotifications();
 
-    // Markdown
     bool isPreviewMode;
     void RenderMarkdown();
 
-    // Notification state
     std::string notificationMessage;
     float notificationDuration;
     void ShowNotification(const std::string& message, float duration = 2.0f);
